@@ -9,3 +9,5 @@ streamlit
 requests
 joblib
 pydantic
+groq
+python-dotenv
