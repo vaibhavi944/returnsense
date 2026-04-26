@@ -1,12 +1,23 @@
 import os
 from groq import Groq
 from dotenv import load_dotenv
+import streamlit as st
 
-load_dotenv()
+# Initialize Groq Client safely for both Local and Cloud
+def get_groq_client():
+    # 1. Try Streamlit Secrets (Cloud)
+    if "GROQ_API_KEY" in st.secrets:
+        return Groq(api_key=st.secrets["GROQ_API_KEY"])
+    
+    # 2. Try Environment Variables (Local)
+    load_dotenv()
+    api_key = os.getenv("GROQ_API_KEY")
+    if api_key:
+        return Groq(api_key=api_key)
+        
+    return None
 
-# Initialize Groq Client
-api_key = os.getenv("GROQ_API_KEY")
-client = Groq(api_key=api_key) if api_key else None
+client = get_groq_client()
 
 def get_seller_return_history(seller_id: str):
     return f"Seller {seller_id} has a 15% return rate. Most returns are due to 'Sizing' and 'Color Mismatch'."
@@ -16,14 +27,9 @@ def get_product_complaints(product_id: str):
     return f"Product {product_id} complaints: 'Material feels cheap', 'Fades after one wash'."
 
 def generate_recommendations(seller_id: str, product_id: str = None):
-    """
-    Uses Groq LLM to generate intelligent recommendations.
-    Falls back to rules if no API key is found.
-    """
     history = get_seller_return_history(seller_id)
     complaints = get_product_complaints(product_id)
     
-    # 1. If we HAVE an API Key, use the LLM
     if client:
         try:
             prompt = f"""
@@ -38,7 +44,8 @@ def generate_recommendations(seller_id: str, product_id: str = None):
             Return a JSON object with:
             {{
                 "priority": "HIGH/MEDIUM/LOW",
-                "recommendations": ["string", "string"]
+                "recommendations": ["string", "string"],
+                "source": "Groq Llama 3"
             }}
             """
             
@@ -49,23 +56,21 @@ def generate_recommendations(seller_id: str, product_id: str = None):
             )
             import json
             return json.loads(chat_completion.choices[0].message.content)
-        except Exception as e:
-            print(f"Groq Error: {e}")
-            # Fallback to rules if LLM fails
+        except Exception:
+            pass # Fallback to rules if error
     
-    # 2. FALLBACK RULES (If no API key or LLM error)
+    # FALLBACK RULES
     recommendations = ["Review product descriptions for accuracy", "Ensure high-quality images"]
     priority = "MEDIUM"
-    
     if "Sizing" in history:
         priority = "HIGH"
         recommendations = [
             "Add a detailed size chart with measurements.",
-            "Include a 'Fit Finder' quiz on the product page.",
-            "Encourage customers to post photos in reviews."
+            "Include a 'Fit Finder' quiz on the product page."
         ]
     
     return {
         "priority": priority,
-        "recommendations": recommendations
+        "recommendations": recommendations,
+        "source": "Rule-based System"
     }

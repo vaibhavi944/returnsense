@@ -2,8 +2,10 @@ import streamlit as st
 import sys
 import os
 
-# --- PATH FIX ---
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+# --- ROBUST PATH FIX ---
+repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+if repo_root not in sys.path:
+    sys.path.insert(0, repo_root)
 
 from src.agent.agent import generate_recommendations
 
@@ -18,8 +20,17 @@ if st.button("Generate Insights"):
     with st.spinner("Agent is analyzing history and complaints..."):
         try:
             data = generate_recommendations(seller_id, product_id if product_id else None)
+            
+            # Show the source of the AI
+            source = data.get("source", "Unknown")
+            if source == "Groq Llama 3":
+                st.caption(f"✅ Active Engine: **{source}** (LLM Mode)")
+            else:
+                st.caption(f"⚠️ Active Engine: **{source}** (Fallback Mode)")
+                
             st.subheader(f"Priority: {data['priority']}")
             for rec in data['recommendations']:
                 st.info(f"💡 {rec}")
+                
         except Exception as e:
             st.error(f"Error generating insights: {e}")
