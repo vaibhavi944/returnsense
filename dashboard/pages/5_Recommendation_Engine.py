@@ -39,8 +39,18 @@ col1, col2 = st.columns([1, 2])
 
 with col1:
     st.subheader("Target Entity")
-    seller_id = st.text_input("Seller ID", "SELLER_ALPHA")
-    product_id = st.text_input("Product ID (Optional)", "")
+    # Using real data to suggest inputs
+    try:
+        import pandas as pd
+        df = pd.read_csv('data/processed/classified_returns.csv')
+        regions = df['User_Location'].unique()[:10]
+        products = df['Product_ID'].unique()[:10]
+    except:
+        regions = ["City5", "City11"]
+        products = ["PROD0318", "PROD0169"]
+
+    seller_id = st.selectbox("Regional Hub / Seller Region", regions, help="Select a region to analyze its return trends.")
+    product_id = st.selectbox("Product ID (Optional)", ["None"] + list(products), help="Select a specific product to drill down.")
     
     st.markdown("### Contextual Constraints")
     st.multiselect("Focus Areas", ["Sizing", "Packaging", "Material Quality", "Description Accuracy"], default=["Sizing", "Description Accuracy"])
@@ -50,13 +60,14 @@ with col2:
     if st.button("Generate Strategic Recommendations", use_container_width=True):
         with st.spinner("AI Agent is synthesizing historical data..."):
             try:
-                data = generate_recommendations(seller_id, product_id if product_id else None)
+                # Call logic
+                p_id = None if product_id == "None" else product_id
+                data = generate_recommendations(seller_id, p_id)
                 
                 st.markdown(f"**Priority Level:** {data.get('priority', 'MEDIUM')}")
                 
                 for idx, rec in enumerate(data.get("recommendations", [])):
                     with st.expander(f"Recommendation #{idx+1}", expanded=True):
-                        # Detect if recommendation is a dictionary (Advanced) or string (Simple)
                         if isinstance(rec, dict):
                             st.markdown(f"### 🎯 {rec.get('action', 'Action Item')}")
                             st.write(rec.get('description', ''))
