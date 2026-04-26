@@ -1,9 +1,6 @@
-# 📦 ReturnSense: End-to-End AI E-commerce Return Mitigation
+# 📦 ReturnSense: AI-Powered E-commerce Return Mitigation
 
 ### 🚀 [Live Demo: View ReturnSense on Streamlit Cloud](https://returnsense-n2l74ghdjscawr45pivydt.streamlit.app/)
-
-![ReturnSense Dashboard Hero](https://via.placeholder.com/1000x500.png?text=ReturnSense+Dashboard+Preview+Click+Live+Demo+Above)
-*Above: High-level overview of the ReturnSense Intelligence Command Center.*
 
 **ReturnSense** is a production-grade AI ecosystem designed to solve one of the most expensive problems in e-commerce: **Product Returns.** 
 
