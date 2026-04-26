@@ -9,8 +9,8 @@ By fusing **Predictive Machine Learning**, **Explainable AI (XAI)**, and **Agent
 ---
 
 ## 🎯 The Business Value
-- **Profit Recovery:** E-commerce returns cost retailers over **$760B** annually. ReturnSense identifies high-risk orders *before* shipment, allowing for pre-delivery intervention.
-- **Sustainability (ESG):** Every return prevented saves ~2.5kg of CO2 and 0.5kg of packaging waste. Our dashboard tracks these metrics in real-time.
+- **Profit Recovery:** E-commerce returns cost retailers over **$760B** annually. ReturnSense identifies high-risk orders *before* shipment, allowing for pre-delivery intervention. In our current dataset, this represents over **$3.7M** in potentially recoverable revenue.
+- **Sustainability (ESG):** Every return prevented saves ~2.5kg of CO2 and 0.5kg of packaging waste. Our dashboard tracks these metrics in real-time across key Indian logistics hubs (Mumbai, Delhi, Bangalore, etc.).
 - **Customer Loyalty:** By identifying common "Sizing" or "Quality" complaints via AI, sellers can fix product listings, leading to higher customer satisfaction.
 
 ---

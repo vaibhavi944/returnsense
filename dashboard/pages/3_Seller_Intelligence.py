@@ -10,7 +10,7 @@ repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 if repo_root not in sys.path:
     sys.path.insert(0, repo_root)
 
-st.set_page_config(page_title="Seller Performance", layout="wide")
+st.set_page_config(page_title="Regional Performance", layout="wide")
 
 st.title("🤝 Regional Performance")
 st.info("💡 **What this page tells you:** Compare different cities to see where returns are highest and how much money you can save by fixing them.")
@@ -21,7 +21,7 @@ try:
     
     city_stats = df.groupby('User_Location').apply(lambda x: pd.Series({
         'Return_Rate': (x['Return_Status'] == 'Returned').mean(),
-        'Total_Orders': len(x),
+        'Total_Orders': int(len(x)), # Formatting as integer
         'Money_Lost': x[x['Return_Status'] == 'Returned']['Order_Value'].sum()
     })).reset_index()
     city_stats.columns = ['City', 'Return_Rate', 'Total_Orders', 'Money_Lost']
@@ -34,10 +34,17 @@ try:
     c1, c2 = st.columns(2)
     with c1:
         st.success("Cities with Fewest Returns")
-        st.dataframe(best[['City', 'Return_Rate', 'Total_Orders']].style.format({'Return_Rate': '{:.1%}'}), hide_index=True)
+        # Fixed formatting for integers
+        st.dataframe(best[['City', 'Return_Rate', 'Total_Orders']].style.format({
+            'Return_Rate': '{:.1%}',
+            'Total_Orders': '{:,.0f}'
+        }), hide_index=True)
     with c2:
         st.error("Cities with Most Returns")
-        st.dataframe(worst[['City', 'Return_Rate', 'Total_Orders']].style.format({'Return_Rate': '{:.1%}'}), hide_index=True)
+        st.dataframe(worst[['City', 'Return_Rate', 'Total_Orders']].style.format({
+            'Return_Rate': '{:.1%}',
+            'Total_Orders': '{:,.0f}'
+        }), hide_index=True)
 
     st.divider()
 

@@ -21,14 +21,16 @@ try:
     returns_df = df[df['Return_Status'] == 'Returned']
     total_orders = len(df)
     return_rate = len(returns_df) / total_orders
-    total_loss = len(returns_df) * 25
-    total_co2 = len(returns_df) * 2.5
+    
+    # MATH FIX: Use actual Order_Value for money lost
+    total_loss = returns_df['Order_Value'].sum()
+    total_co2 = len(returns_df) * 2.5 # Assuming 2.5kg CO2 per return
 
     # --- TOP ROW ---
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Total Orders", f"{total_orders:,}")
     c2.metric("Return Rate", f"{return_rate:.1%}")
-    c3.metric("Money Lost", f"${total_loss:,}")
+    c3.metric("Money Lost", f"${total_loss:,.0f}") # Formatted for large numbers
     c4.metric("CO2 Emissions", f"{total_co2:,.0f} kg")
 
     st.divider()
