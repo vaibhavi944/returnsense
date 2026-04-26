@@ -1,6 +1,10 @@
 import streamlit as st
 import sys
 import os
+from dotenv import load_dotenv
+
+# Load .env for local development
+load_dotenv()
 
 # --- ROBUST PATH FIX ---
 repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "."))
@@ -9,15 +13,23 @@ if repo_root not in sys.path:
 
 st.set_page_config(page_title="ReturnSense Dashboard", layout="wide")
 
-# --- DEBUG SIDEBAR ---
+# --- DEBUG SIDEBAR (SAFE FOR LOCAL) ---
 with st.sidebar:
     st.header("🛠️ System Debug")
-    if "GROQ_API_KEY" in st.secrets:
-        st.success("API Key Detected in Secrets")
-        st.caption(f"Key starts with: {st.secrets['GROQ_API_KEY'][:7]}...")
+    
+    # Use a safer way to check secrets that won't crash locally
+    has_groq = False
+    try:
+        if "GROQ_API_KEY" in st.secrets:
+            has_groq = True
+    except:
+        if os.getenv("GROQ_API_KEY"):
+            has_groq = True
+
+    if has_groq:
+        st.success("Groq API Key Detected")
     else:
-        st.error("API Key NOT found in Secrets")
-        st.info("Ensure it is set as GROQ_API_KEY = 'your_key' in Settings > Secrets")
+        st.warning("No API Key Found (Agent will use Fallback)")
     
     if st.button("♻️ Clear App Cache"):
         st.cache_resource.clear()
@@ -25,16 +37,15 @@ with st.sidebar:
 
 st.title("ReturnSense: E-commerce Return Intelligence")
 
-# --- CLOUD SETUP: Auto-train if models are missing ---
+# --- CLOUD SETUP ---
 if not os.path.exists("models/return_model.pkl"):
-    st.warning("⚠️ AI Models not found. This is normal for the first launch on the cloud.")
+    st.warning("⚠️ AI Models not found.")
     if st.button("🚀 Initialize AI (Train Model)"):
-        with st.spinner("Training AI model on cloud... this takes about 30 seconds."):
+        with st.spinner("Training AI model..."):
             try:
                 from src.predictor.train import train_models
                 train_models()
-                st.success("✅ AI Initialized successfully! You can now use the Scorer.")
-                st.balloons()
+                st.success("✅ AI Initialized successfully!")
                 st.rerun()
             except Exception as e:
                 st.error(f"Training failed: {str(e)}")

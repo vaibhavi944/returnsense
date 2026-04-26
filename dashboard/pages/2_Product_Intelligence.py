@@ -15,22 +15,45 @@ st.title("📦 Product Intelligence")
 st.markdown("Analyze individual product performance to identify quality flaws and sizing trends.")
 
 try:
-    df = pd.read_csv('data/processed/classified_returns.csv')
+    # Use absolute path to ensure data loads correctly
+    data_path = os.path.join(os.getcwd(), 'data', 'processed', 'classified_returns.csv')
+    df = pd.read_csv(data_path)
     
+    # Pre-calculate global average return rate (The Benchmark)
+    global_avg_rate = (df['Return_Status'] == 'Returned').mean()
+
     # --- TOP SELECTOR ---
-    selected_prod = st.selectbox("Search for a Product ID:", df['Product_ID'].unique()[:50])
+    # Sort products by return rate to make the dropdown more interesting
+    product_stats = df.groupby('Product_ID')['Return_Status'].apply(lambda x: (x == 'Returned').mean()).reset_index()
+    product_stats.columns = ['Product_ID', 'Return_Rate']
+    top_products = product_stats.sort_values('Return_Rate', ascending=False)['Product_ID'].tolist()
     
+    selected_prod = st.selectbox("Search for a Product ID:", top_products[:100])
+    
+    # Filter for the specific product
     p_df = df[df['Product_ID'] == selected_prod]
     returns_p = p_df[p_df['Return_Status'] == 'Returned']
-    p_rate = len(returns_p) / len(p_df)
-    avg_rate = (df['Return_Status'] == 'Returned').mean()
+    
+    # Specific Product Return Rate
+    p_rate = len(returns_p) / len(p_df) if len(p_df) > 0 else 0
 
     # --- ROW 1: PRODUCT HEALTH CHECK ---
     c1, c2, c3 = st.columns(3)
-    c1.metric("Current Return Rate", f"{p_rate:.1%}")
-    c2.metric("Market Benchmark", f"{avg_rate:.1%}")
+    c1.metric("Product Return Rate", f"{p_rate:.1%}")
+    c2.metric("Market Benchmark", f"{global_avg_rate:.1%}")
     
-    status = "⚠️ AT RISK" if p_rate > avg_rate else "✅ HEALTHY"
+    # Compare product to market
+    delta = p_rate - global_avg_rate
+    if delta > 0.05:
+        status = "⚠️ AT RISK (High Returns)"
+        st_color = "error"
+    elif delta < -0.05:
+        status = "✅ HEALTHY (Low Returns)"
+        st_color = "success"
+    else:
+        status = "⚖️ NEUTRAL (Average)"
+        st_color = "info"
+        
     c3.subheader(f"Status: {status}")
 
     st.divider()
@@ -43,23 +66,25 @@ try:
         if len(returns_p) > 0:
             reason_counts = returns_p['Return_Reason'].value_counts().reset_index()
             fig = px.bar(reason_counts, x='Return_Reason', y='count', 
-                         color='count', color_continuous_scale='Plasma')
+                         color='count', color_continuous_scale='Reds')
             st.plotly_chart(fig, use_container_width=True)
         else:
-            st.write("No returns recorded for this product.")
+            st.write("No returns recorded for this specific product.")
 
     with col_r:
         st.subheader("Purchase Demographics (Age)")
         fig2 = px.histogram(p_df, x='User_Age', nbins=10, 
-                            title="Who is buying this?", color_discrete_sequence=['#636EFA'])
+                            title=f"Who is buying {selected_prod}?", color_discrete_sequence=['#636EFA'])
         st.plotly_chart(fig2, use_container_width=True)
 
     # --- ROW 3: AUTOMATED INSIGHT ---
     st.subheader("💡 Data-Driven Insight")
-    if p_rate > 0.2:
-        st.error(f"**Action Required:** {selected_prod} has a return rate significantly higher than the average. Audit the '{returns_p['Return_Reason'].iloc[0]}' reported by customers immediately.")
+    if p_rate > (global_avg_rate + 0.1):
+        st.error(f"**Critical Insight:** {selected_prod} is being returned at a rate significantly higher than your store average. Most customers mention '{returns_p['Return_Reason'].mode()[0]}' as the issue.")
+    elif p_rate < global_avg_rate:
+        st.success(f"**Best Practice:** {selected_prod} is a top performer. Its return rate is better than the market benchmark.")
     else:
-        st.success(f"**Optimization:** {selected_prod} is performing exceptionally well. Analyze its product description to replicate success across other products in the '{p_df['Product_Category'].iloc[0]}' category.")
+        st.info(f"**Performance:** {selected_prod} is aligned with your store's average performance metrics.")
 
 except Exception as e:
     st.error(f"Error loading product intelligence: {e}")
