@@ -28,13 +28,14 @@ with col1:
     try:
         import pandas as pd
         df = pd.read_csv('data/processed/classified_returns.csv')
-        regions = df['User_Location'].unique()[:10]
-        products = df['Product_ID'].unique()[:10]
+        # Updated to include ALL unique cities and products for consistency
+        regions = sorted(df['User_Location'].unique())
+        products = sorted(df['Product_ID'].unique())
     except:
-        regions = ["City5", "City11"]
+        regions = ["Mumbai", "Delhi"]
         products = ["PROD01", "PROD02"]
 
-    seller_id = st.selectbox("Pick a Region:", regions)
+    seller_id = st.selectbox("Pick a City/Region:", regions)
     product_id = st.selectbox("Pick a Product (Optional):", ["None"] + list(products))
 
 with col2:

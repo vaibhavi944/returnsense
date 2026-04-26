@@ -19,12 +19,13 @@ st.info("💡 **What this page tells you:** This tool uses AI to predict if a ne
 # Load real data for dropdowns
 try:
     df = pd.read_csv('data/processed/classified_returns.csv')
-    real_order_ids = df['Order_ID'].unique()[:50]
-    real_product_ids = df['Product_ID'].unique()[:50]
-    real_user_ids = df['User_ID'].unique()[:50]
-    categories = df['Product_Category'].unique().tolist()
-    shipping_methods = df['Shipping_Method'].unique().tolist()
-    payment_methods = df['Payment_Method'].unique().tolist()
+    # Updated to include more IDs for testing
+    real_order_ids = sorted(df['Order_ID'].unique())
+    real_product_ids = sorted(df['Product_ID'].unique())
+    real_user_ids = sorted(df['User_ID'].unique())
+    categories = sorted(df['Product_Category'].unique().tolist())
+    shipping_methods = sorted(df['Shipping_Method'].unique().tolist())
+    payment_methods = sorted(df['Payment_Method'].unique().tolist())
 except:
     real_order_ids = ["ORD0001", "ORD0002"]
     real_product_ids = ["PROD01", "PROD02"]
