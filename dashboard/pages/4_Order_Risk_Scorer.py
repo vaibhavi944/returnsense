@@ -16,6 +16,23 @@ st.set_page_config(page_title="Order Scorer", layout="wide")
 st.title("⚖️ Order Risk Scorer")
 st.info("💡 **What this page tells you:** This tool uses AI to predict if a new order will be returned before you even ship it out.")
 
+# Load real data for dropdowns
+try:
+    df = pd.read_csv('data/processed/classified_returns.csv')
+    real_order_ids = df['Order_ID'].unique()[:50]
+    real_product_ids = df['Product_ID'].unique()[:50]
+    real_user_ids = df['User_ID'].unique()[:50]
+    categories = df['Product_Category'].unique().tolist()
+    shipping_methods = df['Shipping_Method'].unique().tolist()
+    payment_methods = df['Payment_Method'].unique().tolist()
+except:
+    real_order_ids = ["ORD0001", "ORD0002"]
+    real_product_ids = ["PROD01", "PROD02"]
+    real_user_ids = ["USER01", "USER02"]
+    categories = ["Clothing", "Electronics"]
+    shipping_methods = ["Standard", "Express"]
+    payment_methods = ["Credit Card", "PayPal"]
+
 # --- INTERNAL AI LOGIC ---
 @st.cache_resource
 def load_ai_models():
@@ -37,17 +54,17 @@ else:
     with st.form("risk_form"):
         col1, col2 = st.columns(2)
         with col1:
-            order_id = st.text_input("Order ID", "ORD9999")
-            product_id = st.text_input("Product ID (Try: PROD0318)", "PROD0318")
-            customer_id = st.text_input("Customer ID (Try: USER1469)", "USER1469")
-            product_category = st.selectbox("Product Category", ["Clothing", "Electronics", "Home", "Toys", "Books"])
-            user_age = st.slider("Customer Age", 18, 80, 35)
+            order_id = st.selectbox("Order ID:", real_order_ids)
+            product_id = st.selectbox("Product ID:", real_product_ids)
+            customer_id = st.selectbox("Customer ID:", real_user_ids)
+            product_category = st.selectbox("Product Category:", categories)
+            user_age = st.slider("Customer Age:", 18, 80, 35)
         with col2:
-            order_value = st.number_input("Order Value ($)", value=150.0)
-            order_qty = st.number_input("Order Quantity", value=1)
-            shipping_method = st.selectbox("Shipping Method", ["Standard", "Express", "Next-Day"])
-            payment_method = st.selectbox("Payment Method", ["Credit Card", "PayPal", "COD", "Wallet"])
-            user_gender = st.selectbox("User Gender", ["Male", "Female", "Other"])
+            order_value = st.number_input("Order Value ($):", value=150.0)
+            order_qty = st.number_input("Order Quantity:", value=1)
+            shipping_method = st.selectbox("Shipping Method:", shipping_methods)
+            payment_method = st.selectbox("Payment Method:", payment_methods)
+            user_gender = st.selectbox("User Gender:", ["Male", "Female", "Other"])
         
         submitted = st.form_submit_button("Check Return Risk", use_container_width=True)
         
@@ -59,8 +76,8 @@ else:
                 "Shipping_Method": shipping_method, "Payment_Method": payment_method,
                 "User_Gender": user_gender, "Product_Price": order_value / order_qty if order_qty > 0 else 0
             }
-            df = pd.DataFrame([order_data])
-            X = fb.transform(df)
+            df_input = pd.DataFrame([order_data])
+            X = fb.transform(df_input)
             prob = float(model.predict_proba(X)[0][1])
             explanation = explainer.explain_prediction(order_data)
             
