@@ -22,9 +22,8 @@ try:
 
     st.markdown("---")
 
-    # --- STATUS CARDS (Simple & Clear) ---
+    # --- STATUS CARDS ---
     c1, c2 = st.columns(2)
-    
     with c1:
         st.metric("This Product's Return Rate", f"{p_rate:.1%}")
     with c2:
@@ -37,12 +36,18 @@ try:
 
     st.divider()
 
-    # --- SIMPLE BAR CHART ---
+    # --- SLIM BAR CHART ---
     st.subheader("Why people are returning this specific item")
     if len(returns_p) > 0:
+        # Create a vertical bar chart and set a fixed width for bars to make them thinner
         fig_bar = px.bar(returns_p['Return_Reason'].value_counts().reset_index(), 
-                        x='count', y='Return_Reason', orientation='h',
+                        x='Return_Reason', y='count',
+                        template="plotly_white",
                         color_discrete_sequence=['#3B82F6'])
+        
+        # Set bar width (0.4 is much thinner than default)
+        fig_bar.update_traces(width=0.4)
+        fig_bar.update_layout(height=400, xaxis_title="Reason for Return", yaxis_title="Number of Returns")
         st.plotly_chart(fig_bar, use_container_width=True)
     else:
         st.info("No returns recorded for this product yet.")
