@@ -11,60 +11,70 @@ repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "."))
 if repo_root not in sys.path:
     sys.path.insert(0, repo_root)
 
-st.set_page_config(page_title="ReturnSense Dashboard", layout="wide")
+st.set_page_config(page_title="ReturnSense Home", layout="wide")
 
-# --- DEBUG SIDEBAR (FIXED LOGIC) ---
+# --- SIDEBAR DEBUG ---
 with st.sidebar:
     st.header("🛠️ System Debug")
-    
-    # Robust multi-source key check
     has_groq = False
-    
-    # 1. Check Env Var (Local)
-    if os.getenv("GROQ_API_KEY"):
-        has_groq = True
-    
-    # 2. Check Streamlit Secrets (Cloud) - with crash protection
-    if not has_groq:
-        try:
-            if "GROQ_API_KEY" in st.secrets:
-                has_groq = True
-        except:
-            pass
+    if os.getenv("GROQ_API_KEY"): has_groq = True
+    try:
+        if "GROQ_API_KEY" in st.secrets: has_groq = True
+    except: pass
 
     if has_groq:
-        st.success("✅ Groq API Key Detected")
-        st.caption("AI Agent: LLM Mode Active")
+        st.success("✅ Groq AI Active")
     else:
-        st.error("❌ No API Key Found")
-        st.info("Agent will use Fallback Rules. To fix: Add GROQ_API_KEY to your .env file or Streamlit Secrets.")
+        st.warning("⚠️ Using Fallback Rules")
     
     st.divider()
-    if st.button("♻️ Clear App Cache", use_container_width=True):
+    if st.button("♻️ Reset App Cache", use_container_width=True):
         st.cache_resource.clear()
         st.rerun()
 
-st.title("ReturnSense: E-commerce Return Intelligence")
+# --- MAIN CONTENT ---
+st.title("📦 Welcome to ReturnSense")
+st.markdown("### The Smart Way to Stop Product Returns")
 
-# --- CLOUD SETUP ---
+st.markdown("""
+**ReturnSense** is an AI-powered system designed to help e-commerce stores reduce the number of items sent back by customers. 
+By analyzing past data, our system predicts which orders are risky, explains why, and gives you real advice on how to fix the problems.
+""")
+
+st.divider()
+
+st.markdown("### 🔍 What you can do in this dashboard:")
+
+col1, col2 = st.columns(2)
+
+with col1:
+    with st.expander("📈 **Business Overview**", expanded=True):
+        st.write("See the 'Big Picture'. Track how much money returns are costing you and see their impact on the environment.")
+    
+    with st.expander("📦 **Product Performance**", expanded=True):
+        st.write("Drill down into individual items. Find out which specific products are causing the most headaches and why.")
+
+with col2:
+    with st.expander("⚖️ **Order Risk Scorer**", expanded=True):
+        st.write("Use our AI to check new orders. Enter order details and see the probability of a return before you ship.")
+
+    with col2:
+        with st.expander("🤝 **Regional Performance**", expanded=True):
+            st.write("Compare cities and regions. See where your happiest customers are and where your logistics need work.")
+
+st.info("💡 **Get Started:** Use the sidebar on the left to navigate to any of the pages mentioned above!")
+
+# --- INITIALIZATION SECTION ---
 if not os.path.exists("models/return_model.pkl"):
-    st.warning("⚠️ AI Models not found.")
-    if st.button("🚀 Initialize AI (Train Model)"):
-        with st.spinner("Training AI model..."):
+    st.markdown("---")
+    st.warning("⚠️ **First Time Setup:** The AI 'Brain' needs to be initialized to start predicting.")
+    if st.button("🚀 Initialize AI (Train Model Now)", use_container_width=True):
+        with st.spinner("Learning from your data... please wait 30 seconds."):
             try:
                 from src.predictor.train import train_models
                 train_models()
-                st.success("✅ AI Initialized successfully!")
+                st.success("✅ AI is ready! You can now use the Scorer.")
+                st.balloons()
                 st.rerun()
             except Exception as e:
-                st.error(f"Training failed: {str(e)}")
-
-st.markdown("""
-Welcome to the **ReturnSense Dashboard**. Use the sidebar to navigate to:
-
-- **Executive Overview:** High-level metrics on returns and financial impact.
-- **Product Intelligence:** Deep dive into product return rates and reasons.
-- **Seller Intelligence:** Seller performance and actionable insights.
-- **Order Risk Scorer:** Predict return probability for new orders (Real-time).
-- **Recommendation Engine:** Agent-generated recommendations to reduce returns.
-""")
+                st.error(f"Error: {str(e)}")
