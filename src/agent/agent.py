@@ -15,13 +15,23 @@ def get_api_key():
     return None
 
 def get_seller_metrics(seller_id: str):
+    """
+    Retrieves unique stats for a specific city/region to give the AI real context.
+    """
     try:
         df = pd.read_csv('data/processed/classified_returns.csv')
-        return_rate = (df['Return_Status'] == 'Returned').mean()
-        top_reasons = df['Return_Reason'].value_counts().head(3).to_dict()
-        return f"Seller {seller_id} Stats: Return Rate {return_rate:.1%}, Common Issues: {top_reasons}"
-    except:
-        return "Seller history unavailable."
+        # Filter data for the specific city (Seller proxy)
+        city_df = df[df['User_Location'] == seller_id]
+        
+        if len(city_df) > 0:
+            return_rate = (city_df['Return_Status'] == 'Returned').mean()
+            top_reasons = city_df[city_df['Return_Status'] == 'Returned']['Return_Reason'].value_counts().head(3).to_dict()
+            total_orders = len(city_df)
+            return f"City {seller_id} Stats: Total Orders: {total_orders}, Return Rate {return_rate:.1%}, Top Issues: {top_reasons}"
+        
+        return f"City {seller_id} has limited history in the system."
+    except Exception as e:
+        return f"Error retrieving city stats: {str(e)}"
 
 def get_product_complaints(product_id: str):
     if not product_id:
@@ -31,13 +41,14 @@ def get_product_complaints(product_id: str):
         prod_data = df[df['Product_ID'] == product_id]
         if len(prod_data) > 0:
             rate = (prod_data['Return_Status'] == 'Returned').mean()
-            reasons = prod_data['Return_Reason'].unique().tolist()
-            return f"Product {product_id} has a {rate:.1%} return rate. Reasons: {reasons}"
+            reasons = prod_data[prod_data['Return_Status'] == 'Returned']['Return_Reason'].unique().tolist()
+            return f"Product {product_id} has a {rate:.1%} return rate. Reasons cited by customers: {reasons}"
         return f"Product {product_id} is new or has limited history."
     except:
         return "Product data unavailable."
 
 def generate_recommendations(seller_id: str, product_id: str = None):
+    # Now history is UNIQUE to the city picked!
     history = get_seller_metrics(seller_id)
     complaints = get_product_complaints(product_id)
     
@@ -48,10 +59,10 @@ def generate_recommendations(seller_id: str, product_id: str = None):
             client = Groq(api_key=api_key)
             prompt = f"""
             You are a Senior E-commerce Strategy Consultant.
-            CONTEXT: {history}
-            FOCUS: {complaints}
+            CITY DATA: {history}
+            PRODUCT FOCUS: {complaints}
             
-            Provide 3 highly professional, actionable recommendations to reduce returns.
+            Based on this specific data, provide 3 highly professional, actionable recommendations to reduce returns.
             Respond ONLY in JSON format:
             {{
                 "priority": "HIGH/MEDIUM/LOW",
@@ -71,15 +82,15 @@ def generate_recommendations(seller_id: str, product_id: str = None):
             )
             content = chat_completion.choices[0].message.content
             res = json.loads(content)
-            return {**res, "source": "Groq Llama 3.1", "v": "1.5"}
+            return {**res, "source": "Groq Llama 3.1", "v": "1.6"}
         except:
             pass
             
     return {
         "priority": "MEDIUM",
         "recommendations": [
-            {"action": "Audit Descriptions", "description": "Ensure all product descriptions are accurate.", "metrics": "Lower 'Not as Described' returns by 10%"}
+            {"action": "Audit Local Logistics", "description": f"Verify the shipping and handling process in {seller_id} region.", "metrics": "Lower damage-related returns by 8%"}
         ],
         "source": "Rule-based Fallback",
-        "v": "1.5"
+        "v": "1.6"
     }
