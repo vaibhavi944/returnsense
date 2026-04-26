@@ -32,7 +32,7 @@ with st.sidebar:
     else:
         st.warning("LLM Mode: Fallback (Heuristic Rules)")
     
-    st.info("The agent analyzes historical return patterns and unstructured customer feedback to generate strategic interventions.")
+    st.info("The agent analyzes historical return patterns and customer feedback to generate strategic business interventions.")
 
 # --- UI LAYOUT ---
 col1, col2 = st.columns([1, 2])
@@ -56,9 +56,17 @@ with col2:
                 
                 for idx, rec in enumerate(data.get("recommendations", [])):
                     with st.expander(f"Recommendation #{idx+1}", expanded=True):
-                        st.write(f"💡 {rec}")
+                        # Detect if recommendation is a dictionary (Advanced) or string (Simple)
+                        if isinstance(rec, dict):
+                            st.markdown(f"### 🎯 {rec.get('action', 'Action Item')}")
+                            st.write(rec.get('description', ''))
+                            if 'metrics' in rec:
+                                st.info(f"**Expected Impact:** {rec['metrics']}")
+                        else:
+                            st.write(f"💡 {rec}")
                 
-                st.caption(f"Engine: {data.get('source', 'System')} | Intelligence Version: {data.get('v', '1.0')}")
+                st.divider()
+                st.caption(f"Engine: {data.get('source', 'System')} | Intelligence Version: {data.get('v', '1.5')}")
             except Exception as e:
                 st.error(f"Engine Synthesis Error: {e}")
 
