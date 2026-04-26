@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
 import os
 import sys
 
@@ -11,64 +10,44 @@ if repo_root not in sys.path:
 
 st.set_page_config(page_title="Seller Intelligence", layout="wide")
 
-st.title("🤝 Seller Performance Intelligence")
-st.markdown("Auditing third-party seller reliability and return velocity metrics.")
+st.title("🤝 Seller Performance")
+st.markdown("This page shows which regions have the most and least returns.")
 
 try:
     data_path = os.path.join(os.getcwd(), 'data', 'processed', 'classified_returns.csv')
     df = pd.read_csv(data_path)
     
-    # Simulate Sellers using User_Location as proxy for this dataset demo
-    seller_proxy = 'User_Location' 
-    
-    seller_stats = df.groupby(seller_proxy).agg({
+    seller_stats = df.groupby('User_Location').agg({
         'Return_Status': lambda x: (x == 'Returned').mean(),
         'Order_ID': 'count',
         'Order_Value': 'sum'
     }).reset_index()
-    seller_stats.columns = ['Seller_Region', 'Return_Rate', 'Total_Orders', 'Total_GMV']
+    seller_stats.columns = ['Region', 'Return_Rate', 'Total_Orders', 'Total_Money']
     
-    # --- TOP ROW: LEADERBOARD ---
-    st.subheader("🏆 Seller Performance Leaderboard (by Region)")
-    best_sellers = seller_stats.sort_values('Return_Rate').head(5)
-    worst_sellers = seller_stats.sort_values('Return_Rate', ascending=False).head(5)
+    # --- LEADERBOARD ---
+    st.subheader("Top and Bottom Regions")
+    best = seller_stats.sort_values('Return_Rate').head(5)
+    worst = seller_stats.sort_values('Return_Rate', ascending=False).head(5)
     
-    col_a, col_b = st.columns(2)
-    with col_a:
-        st.success("Top 5 Regions (Lowest Returns)")
-        st.table(best_sellers[['Seller_Region', 'Return_Rate', 'Total_Orders']])
-    with col_b:
-        st.error("Bottom 5 Regions (Highest Returns)")
-        st.table(worst_sellers[['Seller_Region', 'Return_Rate', 'Total_Orders']])
+    c1, c2 = st.columns(2)
+    with c1:
+        st.success("Best Performing Regions")
+        st.dataframe(best[['Region', 'Return_Rate', 'Total_Orders']])
+    with c2:
+        st.error("Regions with Most Returns")
+        st.dataframe(worst[['Region', 'Return_Rate', 'Total_Orders']])
 
     st.divider()
 
-    # --- ROW 2: SELLER AUDIT ---
-    selected_seller = st.selectbox("Select Regional Seller Hub for Diagnostic Audit", seller_stats['Seller_Region'].unique())
-    s_data = seller_stats[seller_stats['Seller_Region'] == selected_seller].iloc[0]
+    # --- FORECAST ---
+    st.subheader("Potential Savings")
+    selected_region = st.selectbox("Pick a region to audit:", seller_stats['Region'].unique())
+    s_data = seller_stats[seller_stats['Region'] == selected_region].iloc[0]
     
-    m1, m2, m3 = st.columns(3)
-    m1.metric("Regional Return Rate", f"{s_data['Return_Rate']:.2%}")
-    m2.metric("Total GMV", f"${s_data['Total_GMV']:,.0f}")
+    # Simple Math: If returns drop by 10%, how much money is saved?
+    savings = s_data['Total_Money'] * s_data['Return_Rate'] * 0.1
     
-    avg_global = seller_stats['Return_Rate'].mean()
-    m3.metric("Peer Comparison", f"{(s_data['Return_Rate'] - avg_global):+.2%}", delta_color="inverse")
-
-    st.divider()
-
-    # --- ROW 3: FINANCIAL RECOVERY PLAN ---
-    st.subheader("💰 Revenue Recovery Forecast")
-    potential_savings = s_data['Total_GMV'] * s_data['Return_Rate'] * 0.2 # Assume 20% optimization possible
-    
-    st.info(f"""
-    **Recovery Strategy for {selected_seller}:**
-    By implementing ReturnSense's AI recommendations, this seller can potentially recover **${potential_savings:,.2f}** in the next quarter.
-    
-    **Action Items:**
-    1. Standardize quality checks at the {selected_seller} hub.
-    2. Audit the top 3 high-return SKUs in this region.
-    3. Update local logistics to prevent 'Damaged in Transit' returns.
-    """)
+    st.info(f"If we reduce returns in **{selected_region}** by 10%, you could save **${savings:,.2f}** next quarter!")
 
 except Exception as e:
-    st.error(f"Seller Analytics Failure: {e}")
+    st.error(f"Error: {e}")
