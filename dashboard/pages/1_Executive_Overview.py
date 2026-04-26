@@ -2,19 +2,17 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import os
+import sys
+
+# --- ROBUST PATH FIX ---
+repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if repo_root not in sys.path:
+    sys.path.insert(0, repo_root)
 
 st.set_page_config(page_title="Executive Overview", layout="wide")
 
-# --- CUSTOM CSS ---
-st.markdown("""
-    <style>
-    [data-testid="stMetricValue"] { font-size: 28px; color: #1E3A8A; }
-    .main { background-color: #F8FAFC; }
-    </style>
-    """, unsafe_allow_html=True)
-
-st.title("📊 Business Overview")
-st.markdown("This dashboard shows the financial and environmental cost of product returns.")
+st.title("📈 Business Overview")
+st.info("💡 **What this page tells you:** A high-level look at how returns are affecting your total sales and the environment.")
 
 try:
     data_path = os.path.join(os.getcwd(), 'data', 'processed', 'classified_returns.csv')
@@ -41,17 +39,16 @@ try:
     with col_left:
         st.subheader("Returns by Product Category")
         cat_data = returns_df['Product_Category'].value_counts().reset_index()
-        # Using 'Blues' which is a standard Plotly scale
-        fig = px.pie(cat_data, values='count', names='Product_Category', 
-                     hole=0.4, color_discrete_sequence=px.colors.sequential.Blues_r)
+        fig = px.pie(cat_data, values='count', names='Product_Category', hole=0.4, 
+                     color_discrete_sequence=px.colors.sequential.Blues_r)
         st.plotly_chart(fig, use_container_width=True)
 
     with col_right:
-        st.subheader("Common Return Reasons")
+        st.subheader("Why People Return Items")
         reason_data = returns_df['Return_Reason'].value_counts().reset_index().head(5)
         fig2 = px.bar(reason_data, x='count', y='Return_Reason', orientation='h',
                       color_discrete_sequence=['#3B82F6'])
         st.plotly_chart(fig2, use_container_width=True)
 
 except Exception as e:
-    st.error(f"Error loading dashboard: {e}")
+    st.error(f"Error: {e}")
