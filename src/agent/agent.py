@@ -5,11 +5,28 @@ import streamlit as st
 import json
 import re
 
+def get_api_key():
+    """
+    Safely retrieves the API key without triggering a StreamlitSecretNotFoundError.
+    """
+    # 1. Try environment variable (Local .env)
+    key = os.getenv("GROQ_API_KEY")
+    if key:
+        return key
+        
+    # 2. Try Streamlit Secrets (Cloud) safely
+    try:
+        # We check if the secrets object is actually populated
+        if hasattr(st, "secrets") and "GROQ_API_KEY" in st.secrets:
+            return st.secrets["GROQ_API_KEY"]
+    except Exception:
+        pass
+        
+    return None
+
 def get_seller_metrics(seller_id: str):
     try:
         df = pd.read_csv('data/processed/classified_returns.csv')
-        # In this dataset, we'll simulate 'Seller' by using 'User_Location' or similar 
-        # but let's assume 'Product_Category' trends or just overall stats if ID not found
         total_orders = len(df)
         return_rate = (df['Return_Status'] == 'Returned').mean()
         top_reasons = df['Return_Reason'].value_counts().head(3).to_dict()
@@ -33,7 +50,7 @@ def generate_recommendations(seller_id: str, product_id: str = None):
     history = get_seller_metrics(seller_id)
     complaints = get_product_complaints(product_id)
     
-    api_key = st.secrets.get("GROQ_API_KEY") or os.getenv("GROQ_API_KEY")
+    api_key = get_api_key()
     
     if api_key:
         try:
@@ -41,8 +58,7 @@ def generate_recommendations(seller_id: str, product_id: str = None):
             prompt = f"""
             You are a Senior E-commerce Consultant. 
             Data: {history}. {complaints}.
-            
-            Based on this data, provide 3 actionable business recommendations to reduce returns.
+            Provide 3 actionable business recommendations to reduce returns.
             Respond ONLY in JSON format:
             {{
                 "priority": "HIGH/MEDIUM/LOW",
@@ -58,12 +74,17 @@ def generate_recommendations(seller_id: str, product_id: str = None):
             if json_match:
                 res = json.loads(json_match.group())
                 return {**res, "source": "Groq Llama 3.1", "v": "1.5"}
-        except:
-            pass
+        except Exception as e:
+            return {
+                "priority": "MEDIUM",
+                "recommendations": [f"LLM Error: {str(e)[:50]}", "Verify product descriptions", "Audit inventory"],
+                "source": "Fallback (LLM Failed)",
+                "v": "1.5"
+            }
             
     return {
         "priority": "MEDIUM",
         "recommendations": ["Review sizing charts", "Improve product descriptions", "Check quality control"],
-        "source": "Rule-based Fallback",
+        "source": "Rule-based Fallback (No Key)",
         "v": "1.5"
     }
