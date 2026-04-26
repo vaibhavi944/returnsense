@@ -4,56 +4,36 @@ from dotenv import load_dotenv
 import streamlit as st
 import json
 
-def get_recommendations_from_ai(history, complaints):
-    """
-    Tries to talk to Groq. Returns None if it fails.
-    """
-    # 1. Get the key from Secrets (Cloud) or .env (Local)
-    api_key = st.secrets.get("GROQ_API_KEY") or os.getenv("GROQ_API_KEY")
-    
-    if not api_key:
-        return None
-        
-    try:
-        client = Groq(api_key=api_key)
-        prompt = f"""
-        You are a Senior E-commerce Consultant. 
-        Analyze this data and provide 3-4 specific, actionable recommendations to reduce returns.
-        
-        DATA:
-        {history}
-        {complaints}
-        
-        FORMAT:
-        Return a JSON object with:
-        {{
-            "priority": "HIGH/MEDIUM/LOW",
-            "recommendations": ["string", "string"],
-            "source": "Groq Llama 3"
-        }}
-        """
-        
-        chat_completion = client.chat.completions.create(
-            messages=[{"role": "user", "content": prompt}],
-            model="llama3-8b-8192",
-            response_format={"type": "json_object"}
-        )
-        return json.loads(chat_completion.choices[0].message.content)
-    except Exception as e:
-        print(f"AI Error: {e}")
-        return None
-
 def generate_recommendations(seller_id: str, product_id: str = None):
+    # Hard-coded history for demo
     history = f"Seller {seller_id} has a 15% return rate. Most returns are due to 'Sizing' and 'Color Mismatch'."
     complaints = f"Product {product_id} complaints: 'Material feels cheap', 'Fades after one wash'."
     
-    # Try the real AI first
-    ai_result = get_recommendations_from_ai(history, complaints)
+    # 1. Try to get the Groq Key
+    api_key = st.secrets.get("GROQ_API_KEY") or os.getenv("GROQ_API_KEY")
     
-    if ai_result:
-        return ai_result
-        
-    # FALLBACK: If AI fails or no key
+    # 2. If Key exists, try LLM
+    if api_key:
+        try:
+            client = Groq(api_key=api_key)
+            prompt = f"Context: {history} {complaints}. Provide 3 short recommendations to reduce returns. Return ONLY a JSON with keys 'priority' and 'recommendations'."
+            
+            chat_completion = client.chat.completions.create(
+                messages=[{"role": "user", "content": prompt}],
+                model="llama3-8b-8192",
+                response_format={"type": "json_object"}
+            )
+            res = json.loads(chat_completion.choices[0].message.content)
+            return {
+                "priority": res.get("priority", "MEDIUM"),
+                "recommendations": res.get("recommendations", []),
+                "source": "Groq Llama 3 (Live AI)",
+                "v": "1.2"
+            }
+        except Exception:
+            pass # Fallback on error
+            
+    # 3. Final Fallback
     return {
         "priority": "HIGH",
         "recommendations": [
@@ -61,5 +41,6 @@ def generate_recommendations(seller_id: str, product_id: str = None):
             "Include a 'Fit Finder' quiz on the product page.",
             "Encourage customers to post photos in reviews."
         ],
-        "source": "Rule-based System (Fallback)"
+        "source": "Rule-based Engine (No API Key)",
+        "v": "1.2"
     }

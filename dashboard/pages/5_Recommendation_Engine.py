@@ -21,16 +21,15 @@ if st.button("Generate Insights"):
         try:
             data = generate_recommendations(seller_id, product_id if product_id else None)
             
-            # Show the source of the AI
-            source = data.get("source", "Unknown")
-            if source == "Groq Llama 3":
-                st.caption(f"✅ Active Engine: **{source}** (LLM Mode)")
-            else:
-                st.caption(f"⚠️ Active Engine: **{source}** (Fallback Mode)")
+            # Show version and source
+            source = data.get("source", "Unknown Version")
+            version = data.get("v", "Old")
+            
+            st.caption(f"Engine: **{source}** | App Version: **{version}**")
                 
             st.subheader(f"Priority: {data['priority']}")
             for rec in data['recommendations']:
                 st.info(f"💡 {rec}")
                 
         except Exception as e:
-            st.error(f"Error generating insights: {e}")
+            st.error(f"Error: {e}")
