@@ -56,7 +56,12 @@ try:
 
     with col_r:
         st.subheader("Ages of people buying this")
-        fig_age = px.histogram(p_df, x='User_Age', color_discrete_sequence=['#1E3A8A'])
+        fig_age = px.histogram(p_df, x='User_Age', 
+                               color_discrete_sequence=['#1E3A8A'],
+                               template="plotly_white")
+        # Add space between bars (bargap) and make bars slightly thinner
+        fig_age.update_layout(bargap=0.2)
+        fig_age.update_layout(xaxis_title="Customer Age", yaxis_title="Number of Buyers")
         st.plotly_chart(fig_age, use_container_width=True)
 
 except Exception as e:
