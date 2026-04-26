@@ -1,61 +1,112 @@
-# ReturnSense
+# 📦 ReturnSense: The Intelligent E-commerce Return Mitigation Ecosystem
 
-ReturnSense is a production-grade AI system designed to predict, classify, and mitigate e-commerce returns. By combining traditional machine learning (XGBoost) with state-of-the-art Generative AI agents, ReturnSense provides comprehensive visibility and actionable recommendations for businesses.
+**ReturnSense** is a production-grade AI ecosystem designed to solve one of the most expensive problems in e-commerce: **Customer Returns.** 
 
-## Architecture
+By fusing **Predictive Machine Learning**, **Explainable AI (XAI)**, and **Agentic Prescriptive Reasoning**, ReturnSense doesn't just predict a return—it explains the root cause and provides actionable strategies to prevent it.
 
-1. **Machine Learning Pipeline:** End-to-end data processing, feature engineering, and model training with XGBoost and MLflow integration.
-2. **Explainability Layer:** SHAP TreeExplainer converts complex model predictions into human-readable insights.
-3. **FastAPI Backend:** Production-ready REST and WebSocket APIs serving real-time predictions.
-4. **Agentic Recommendation System:** Context-aware LLM agents that analyze seller metrics and product flaws to provide actionable remedies.
-5. **Streamlit Dashboard:** Interactive, multi-page visualization tool for Executive Overview, Product/Seller Intelligence, and Live Scoring.
+---
 
-## Features
-- **Zero Data Leakage:** Aggregated historical features map strictly to test data.
-- **Class Imbalance Handling:** Tuned `scale_pos_weight` ensures high recall for potential returns.
-- **Explainable AI:** Top three driving factors for each prediction provided directly to the dashboard.
-- **Real-Time Scoring:** WebSocket integration allows instant risk assessment as users shop.
-- **Containerized:** Fully Dockerized ecosystem via `docker-compose`.
+## 🎯 The Business Case: Why ReturnSense?
+- **The Financial Drain:** E-commerce returns cost retailers over **$760 billion** annually in the US alone.
+- **The Environmental Cost:** Returns generate **15 million tons of CO2** emissions and **5 billion pounds of landfill waste** every year.
+- **The ReturnSense Solution:** By identifying high-risk orders *before* they are shipped, businesses can intervene (e.g., offering a discount for keeping the item, verifying size via chat) to save revenue and reduce their carbon footprint.
 
-## Setup Instructions
+---
 
-### Local Development
-1. **Clone the repository.**
-2. **Install requirements:**
+## 🏛️ The Three Pillars of the System
+
+### 1. The Predictive Engine (XGBoost)
+The "Brain" of the system. It analyzes historical patterns to assign a probability score to new orders.
+- **Recall-Focused Tuning:** In returns mitigation, missing a return is more expensive than a false alarm. We tuned the model for **Recall > 80%**.
+- **Leakage Prevention:** Features like `product_return_rate` are calculated strictly on training data to ensure the model doesn't "cheat" by seeing the future.
+
+### 2. The Explainability Layer (SHAP)
+AI shouldn't be a black box. ReturnSense uses **SHAP (SHapley Additive exPlanations)** to break down every prediction.
+- **Human-Readable Insights:** Instead of showing raw math, the system translates SHAP values into insights like *"High risk due to historical return rates for this category"* or *"Customer age is a driving factor for this prediction."*
+
+### 3. The Agentic Recommendation Engine (Llama 3.1 via Groq)
+The system transitions from **Predictive** (what will happen) to **Prescriptive** (what to do).
+- **LLM Reasoning:** A Generative AI Agent (Llama 3.1) analyzes the specific data and generates custom business strategies for the seller, such as updating size charts or improving product imagery.
+
+---
+
+## 🏗️ Technical Architecture & Workflow
+1. **Data Ingestion:** Processed CSV data with structured return categories (Size, Damage, Defect).
+2. **Feature Engineering:** Automated pipeline to compute customer/product return velocities and categorical encoding.
+3. **Training & Logging:** Model training with **XGBoost**, using **MLflow** for experiment tracking.
+4. **Smart Inference:** A Streamlit-based "In-App" engine that loads serialized models (`.pkl`) and runs live scoring.
+5. **Agentic Loop:** Groq-powered LLM analyzes the context and provides a strategy JSON.
+
+---
+
+## 📂 Project Anatomy
+
+```text
+returnsense/
+├── dashboard/
+│   ├── app.py                     # Entry point for the Cloud Dashboard
+│   └── pages/
+│       ├── 1_Executive_Overview.py # Macro-level business metrics
+│       ├── 3_Seller_Intelligence.py # Deep-dive into seller performance
+│       ├── 4_Order_Risk_Scorer.py   # Live ML Inference with SHAP explanations
+│       └── 5_Recommendation_Engine.py # Groq-powered Agentic insights
+├── src/
+│   ├── predictor/
+│   │   ├── data_loader.py         # Leakage-safe train/test splitting
+│   │   ├── feature_builder.py     # Advanced feature engineering & mapping
+│   │   ├── train.py               # XGBoost training pipeline with class weighting
+│   │   ├── evaluate.py            # Custom thresholding for High Recall
+│   │   └── explain.py             # SHAP TreeExplainer integration
+│   └── agent/
+│       └── agent.py               # Generative AI Logic (Groq Llama 3.1)
+├── data/
+│   └── processed/                 # Refined datasets for model training
+├── models/                        # Serialized model artifacts (.pkl files)
+├── requirements.txt               # Project dependencies
+└── build.sh                       # Automation script for cloud deployment
+```
+
+---
+
+## 🛠️ Tech Stack
+- **Languages:** Python 3.10+
+- **Machine Learning:** XGBoost, Scikit-Learn
+- **Explainability:** SHAP
+- **Generative AI:** Groq (Llama 3.1 8B)
+- **Dashboard:** Streamlit
+- **MLOps:** MLflow
+- **Containerization:** Docker (optional)
+
+---
+
+## 🚀 Deployment & Installation
+
+### Local Setup
+1. **Clone & Install:**
    ```bash
    pip install -r requirements.txt
    ```
-3. **Train the Model:**
+2. **Train the AI:**
    ```bash
    python -m src.predictor.train
    ```
-   *This outputs models to `models/` and logs via MLflow.*
-4. **Run the API:**
-   ```bash
-   uvicorn src.api.main:app --reload
-   ```
-5. **Run the Dashboard:**
+3. **Run the Dashboard:**
    ```bash
    streamlit run dashboard/app.py
    ```
 
-### Docker
-To spin up both the API and the Dashboard:
-```bash
-docker-compose up --build
-```
-API will be on port `8000`, Dashboard on `8501`.
+### Cloud Deployment (Streamlit Cloud)
+1. Push this repo to GitHub.
+2. Connect the repo to **Streamlit Community Cloud**.
+3. Add your **GROQ_API_KEY** in the "Secrets" setting.
+4. Launch and click **"Initialize AI"** on the main page to build the models live!
 
-## API Documentation
-Interactive docs available at `http://localhost:8000/docs`
+---
 
-### Endpoints
-- `POST /predict-return-risk`: Send an order payload, receive risk score and top SHAP reasons.
-- `POST /classify-return`: Predict category and confidence of unstructured return text.
-- `GET /seller-intelligence/{seller_id}`: Retrieve seller-level aggregation statistics.
-- `POST /generate-recommendations`: Generative AI agent providing strategic steps to reduce returns.
-- `WS /realtime-scoring`: Stream order info via WebSockets for live alerts.
+## 🛡️ Security & Scalability
+- **Secrets Management:** Sensitive keys are never hardcoded; they are managed via `.env` or Streamlit Secrets.
+- **Fail-Safe Design:** The recommendation engine has a built-in "Fallback Mode" to ensure the app never crashes even if the LLM API is unavailable.
+- **Modular Code:** The `src/` directory is decoupled from the UI, allowing the ML engine to be used in a mobile app or a different backend in the future.
 
-![Screenshots placeholders]
-*(Screenshot 1: Executive Dashboard)*
-*(Screenshot 2: Real-time Order Risk Scorer)*
+---
+*Developed as a Production-Grade AI Portfolio Project.*
