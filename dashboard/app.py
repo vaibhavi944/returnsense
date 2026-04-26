@@ -13,25 +13,34 @@ if repo_root not in sys.path:
 
 st.set_page_config(page_title="ReturnSense Dashboard", layout="wide")
 
-# --- DEBUG SIDEBAR (SAFE FOR LOCAL) ---
+# --- DEBUG SIDEBAR (FIXED LOGIC) ---
 with st.sidebar:
     st.header("🛠️ System Debug")
     
-    # Use a safer way to check secrets that won't crash locally
+    # Robust multi-source key check
     has_groq = False
-    try:
-        if "GROQ_API_KEY" in st.secrets:
-            has_groq = True
-    except:
-        if os.getenv("GROQ_API_KEY"):
-            has_groq = True
+    
+    # 1. Check Env Var (Local)
+    if os.getenv("GROQ_API_KEY"):
+        has_groq = True
+    
+    # 2. Check Streamlit Secrets (Cloud) - with crash protection
+    if not has_groq:
+        try:
+            if "GROQ_API_KEY" in st.secrets:
+                has_groq = True
+        except:
+            pass
 
     if has_groq:
-        st.success("Groq API Key Detected")
+        st.success("✅ Groq API Key Detected")
+        st.caption("AI Agent: LLM Mode Active")
     else:
-        st.warning("No API Key Found (Agent will use Fallback)")
+        st.error("❌ No API Key Found")
+        st.info("Agent will use Fallback Rules. To fix: Add GROQ_API_KEY to your .env file or Streamlit Secrets.")
     
-    if st.button("♻️ Clear App Cache"):
+    st.divider()
+    if st.button("♻️ Clear App Cache", use_container_width=True):
         st.cache_resource.clear()
         st.rerun()
 
