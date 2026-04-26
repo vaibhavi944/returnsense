@@ -6,8 +6,9 @@ from dotenv import load_dotenv
 # Load .env for local development
 load_dotenv()
 
-# --- ROBUST PATH FIX ---
-repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "."))
+# --- ROBUST PATH FIX (ROOT LEVEL) ---
+# app.py is in dashboard/, so root is one level up (..)
+repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if repo_root not in sys.path:
     sys.path.insert(0, repo_root)
 
@@ -65,12 +66,14 @@ with col2:
 st.info("💡 **Get Started:** Use the sidebar on the left to navigate to any of the pages mentioned above!")
 
 # --- INITIALIZATION SECTION ---
-if not os.path.exists("models/return_model.pkl"):
+if not os.path.exists(os.path.join(repo_root, "models", "return_model.pkl")):
     st.markdown("---")
     st.warning("⚠️ **First Time Setup:** The AI 'Brain' needs to be initialized to start predicting.")
     if st.button("🚀 Initialize AI (Train Model Now)", use_container_width=True):
         with st.spinner("Learning from your data... please wait 30 seconds."):
             try:
+                # Ensure we are in the root directory for training paths
+                os.chdir(repo_root)
                 from src.predictor.train import train_models
                 train_models()
                 st.success("✅ AI is ready! You can now use the Scorer.")
