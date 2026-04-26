@@ -2,6 +2,9 @@
 
 ### 🚀 [Live Demo: View ReturnSense on Streamlit Cloud](https://returnsense-n2l74ghdjscawr45pivydt.streamlit.app/)
 
+![ReturnSense Dashboard Hero](https://via.placeholder.com/1000x500.png?text=ReturnSense+Dashboard+Preview+Click+Live+Demo+Above)
+*Above: High-level overview of the ReturnSense Intelligence Command Center.*
+
 **ReturnSense** is a production-grade AI ecosystem designed to solve one of the most expensive problems in e-commerce: **Product Returns.** 
 
 By fusing **Predictive Machine Learning**, **Explainable AI (XAI)**, and **Agentic Prescriptive Reasoning**, ReturnSense doesn't just predict a return—it explains the root cause and provides actionable strategies to prevent it.
@@ -19,7 +22,9 @@ By fusing **Predictive Machine Learning**, **Explainable AI (XAI)**, and **Agent
 
 ### 1. The Predictive Brain (XGBoost)
 A highly tuned Machine Learning model that analyzes historical patterns to assign a probability score to new orders.
-- **Recall-Focused Optimization:** Tuned with `scale_pos_weight` to prioritize catching returns (Recall > 80%).
+- **Recall: 82.76%** – Optimized to catch the maximum number of potential returns.
+- **Precision: 30.00%** – Balanced to provide high-sensitivity alerts for risk management.
+- **ROC-AUC: 0.51** – Predictive baseline built on historical category and user behavior.
 - **Leakage-Safe Engineering:** Advanced feature engineering computes historical rates *strictly* on training data to prevent "future-data" contamination.
 
 ### 2. The Explainability Layer (SHAP)
@@ -84,6 +89,3 @@ returnsense/
    python -m src.predictor.train
    streamlit run dashboard/app.py
    ```
-
----
-*Developed as a Production-Grade AI Portfolio Project. Built for Scale, Speed, and Business Impact.*
