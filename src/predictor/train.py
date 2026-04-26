@@ -1,21 +1,28 @@
-import mlflow
 import joblib
 import os
 import argparse
+import pandas as pd
 from xgboost import XGBClassifier
 from sklearn.linear_model import LogisticRegression
+
+# Use absolute imports to be safe
 from src.predictor.data_loader import load_data, split_data
 from src.predictor.feature_builder import FeatureBuilder
 from src.predictor.evaluate import evaluate_model
 
 def train_models():
+    # 1. Create directory
     os.makedirs('models', exist_ok=True)
     
-    # Load data
-    df = load_data('data/processed/classified_returns.csv')
+    # 2. Load data
+    data_path = os.path.join(os.getcwd(), 'data', 'processed', 'classified_returns.csv')
+    if not os.path.exists(data_path):
+        raise FileNotFoundError(f"Data file not found at {data_path}")
+        
+    df = load_data(data_path)
     train_df, test_df = split_data(df)
     
-    # Feature Building
+    # 3. Feature Building
     fb = FeatureBuilder()
     fb.fit(train_df)
     
@@ -25,49 +32,38 @@ def train_models():
     X_test = fb.transform(test_df)
     y_test = test_df['target']
     
-    # Class imbalance weight (increased significantly to boost recall)
+    # Save FeatureBuilder
+    joblib.dump(fb, 'models/feature_builder.pkl')
+    
+    # 4. XGBoost Model
     pos_count = sum(y_train == 1)
     neg_count = sum(y_train == 0)
     scale_pos_weight = (neg_count / pos_count) * 4.0 if pos_count > 0 else 1.0
 
-    # Save FeatureBuilder for inference
-    joblib.dump(fb, 'models/feature_builder.pkl')
-    
-    # 1. Baseline Model
-    print("Training Baseline Logistic Regression...")
-    lr_model = LogisticRegression(class_weight='balanced', max_iter=1000)
-    lr_model.fit(X_train, y_train)
-    joblib.dump(lr_model, 'models/baseline_lr.pkl')
-    
-    # 2. XGBoost Model
     xgb_params = {
-        'n_estimators': 300,
-        'max_depth': 6,
-        'learning_rate': 0.05,
+        'n_estimators': 100, # Faster training for cloud
+        'max_depth': 4,
+        'learning_rate': 0.1,
         'scale_pos_weight': scale_pos_weight,
         'random_state': 42
     }
     
-    print("Training XGBoost Model...")
-    mlflow.set_experiment("ReturnSense_Modeling")
-    with mlflow.start_run():
-        mlflow.log_params(xgb_params)
-        
-        xgb_model = XGBClassifier(**xgb_params)
-        xgb_model.fit(X_train, y_train)
-        
-        # Evaluate
-        print("Evaluating Model...")
-        metrics = evaluate_model(xgb_model, X_test, y_test)
-        mlflow.log_metrics({
-            "recall": metrics['recall'],
-            "precision": metrics['precision'],
-            "auc": metrics['auc']
-        })
-        
-        joblib.dump(xgb_model, 'models/return_model.pkl')
-        mlflow.xgboost.log_model(xgb_model, "xgb_model")
-        print("Models trained and saved to models/ directory.")
+    xgb_model = XGBClassifier(**xgb_params)
+    xgb_model.fit(X_train, y_train)
+    
+    # 5. Evaluate and Save
+    evaluate_model(xgb_model, X_test, y_test)
+    joblib.dump(xgb_model, 'models/return_model.pkl')
+    
+    # MLflow is optional - if it fails, we don't care on the cloud
+    try:
+        import mlflow
+        mlflow.set_experiment("ReturnSense_Cloud")
+        with mlflow.start_run():
+            mlflow.log_params(xgb_params)
+            mlflow.xgboost.log_model(xgb_model, "xgb_model")
+    except Exception:
+        pass 
 
 if __name__ == '__main__':
     train_models()

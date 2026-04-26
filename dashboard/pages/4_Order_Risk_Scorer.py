@@ -4,8 +4,10 @@ import joblib
 import os
 import sys
 
-# --- PATH FIX ---
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+# --- ROBUST PATH FIX ---
+repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+if repo_root not in sys.path:
+    sys.path.insert(0, repo_root)
 
 from src.predictor.explain import Explainer
 
@@ -15,13 +17,18 @@ st.title("Order Risk Scorer")
 @st.cache_resource
 def load_ai_models():
     try:
-        if not os.path.exists('models/return_model.pkl'):
+        model_path = os.path.join(os.getcwd(), 'models', 'return_model.pkl')
+        fb_path = os.path.join(os.getcwd(), 'models', 'feature_builder.pkl')
+        
+        if not os.path.exists(model_path):
             return None, None, None
-        model = joblib.load('models/return_model.pkl')
-        fb = joblib.load('models/feature_builder.pkl')
+            
+        model = joblib.load(model_path)
+        fb = joblib.load(fb_path)
         explainer = Explainer()
         return model, fb, explainer
     except Exception as e:
+        st.sidebar.error(f"Model load error: {e}")
         return None, None, None
 
 model, fb, explainer = load_ai_models()
